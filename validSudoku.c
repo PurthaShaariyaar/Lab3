@@ -8,24 +8,18 @@
  * @copyright Copyright (c) 2023
  */
 
-
 /**
  * @brief Import all necessary libraries. 
  */
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
 
-/**
- * @brief Define a preprocessor to replace a constant macro. 
- *        Initializing number of threads to be 27: 
- *          [9 threads per row, 9 threads per column, 9 threads per 3 x 3 blocks]
- * 
- */
 
-#define numThreads 27
+#define num_threads 27
 
 /**
  * @brief Initiate an array valid of 27 elements set to 0. Upon checking row, column and 3 x 3 block 
@@ -33,8 +27,7 @@
  * 
  */
 
-int valid[numThreads] = {0};
-
+int valid[num_threads] = {0};
 
 /**
  * @brief Parent threads creating worker threads and passing location. Simplest method to pass parameters
@@ -43,9 +36,9 @@ int valid[numThreads] = {0};
  */
 
 typedef struct {
-  int row;
-  int column; 
-} parameters; 
+	int row;
+	int column;		
+} parameters;
 
 /**
  * @brief Test random Sudoku puzzle to be solved. 
@@ -65,45 +58,6 @@ int sudoku[9][9] = {
 };
 
 /**
- * @brief Function verifies whether rows of the sudoku board are valid. 
- * 
- * @param param pointer to the struct data type to store row and columns. 
- * @return void* 
- */
-
-void *validRow(void* param) {
-  
-  // Initialize and set pointers to struct data strcuture 
-  parameters *params = (parameters*) param; 
-  int row = params->row; 
-  int col = params->column;
-
-  // If row > 8 or col != 0 --> invalid row section --> exit out of thread 
-  if (row > 0 || col != 0) {
-		fprintf(stderr, "Invalid row or column for row subsection! row=%d, col=%d\n", row, col);
-    pthread_exit(NULL); 
-  }
-
-  // Initialize valid row array of size 9 and set all elements to 0, update if each position valid to 1 
-  int validRowArray[9] = {0};
-
-  // Iterate through the whole row --> validate row array and update to 1 
-  // Set thread to 1, if encountered again --> no updates --> exit out of thread
-  for (int i = 0; i < 9; i++) {
-    int num = sudoku[row][i]; 
-    if (num < 1 || num > 9 || validRowArray[num - 1] == 1) {
-      pthread_exit(NULL);
-    } else {
-      validRowArray[num - 1] = 1; 
-    }
-  }
-
-  // Iteration traversed and verified that row is valid --> update valid for rows to be 1 
-  valid[9 + row] = 1; 
-  pthread_exit(NULL);
-}
-
-/**
  * @brief Function verifies whether columns of the sudoku board are valid. 
  * 
  * @param param pointer to the struct data type to store row and columns.
@@ -111,79 +65,119 @@ void *validRow(void* param) {
  */
 
 void *validColumn(void* param) {
-
   // Initialize and set pointers to struct data strcuture 
+
 	parameters *params = (parameters*) param;
 	int row = params->row;
 	int col = params->column;		
 
-  // If col > 8 or row != 0 --> invalid row section --> exit out of thread 
-	if (col > 0 || row != 0) {
+	// If col > 8 or row != 0 --> invalid row section --> exit out of thread 
+
+	if (row != 0 || col > 8) {
 		fprintf(stderr, "Invalid row or column for col subsection! row=%d, col=%d\n", row, col);
-    pthread_exit(NULL); 
+		pthread_exit(NULL);
 	}
 
-  // Initialize valid column array of size 9 and set all elements to 0, update if each position valid to 1 
+// Initialize valid column array of size 9 and set all elements to 0, update if each position valid to 1 
   // Exit out of thread
-	int validColArray[9] = {0};
+	int validityArray[9] = {0};
+	int i;	
 
-  // Iterate through the whole column --> validate column array and update to 1 
+	// Iterate through the whole column --> validate column array and update to 1 
   // Set thread to 1, if encountered again --> no updates --> exit out of thread
-	for (int i = 0; i < 9; i++) {
+	
+	for (i = 0; i < 9; i++) {
 		int num = sudoku[i][col];
-		if (num < 1 || num > 9 || validColArray[num - 1] == 1) {
+		if (num < 1 || num > 9 || validityArray[num - 1] == 1) {
 			pthread_exit(NULL);
 		} else {
-			validColArray[num - 1] = 1;		
+			validityArray[num - 1] = 1;		
 		}
 	}
-
   // Iteration traversed and verified that column is valid --> update valid for columns to be 1 
   // Exit out of thread
+
 	valid[18 + col] = 1;
 	pthread_exit(NULL);
 }
 
 /**
- * @brief 
+ * @brief Function verifies whether rows of the sudoku board are valid. 
  * 
- * @param param 
+ * @param param pointer to the struct data type to store row and columns. 
  * @return void* 
  */
 
-void *threeBlock(void* param) {
-
+void *validRow(void* param) {
   // Initialize and set pointers to struct data strcuture 
-  parameters *params = (parameters*) param; 
-  int row = params->row;
-  int col = params->column; 
+	
+	parameters *params = (parameters*) param;
+	int row = params->row;
+	int col = params->column;	
 
-  // 3 x 3 Block verification to check it's a correct block 
-  if (row > 6 || col > 6 || row % 3 != 0 || col % 3 != 0) {
+	// If row > 8 or col != 0 --> invalid row section --> exit out of thread 	
+	if (col != 0 || row > 8) {
+		fprintf(stderr, "Invalid row or column for row subsection! row=%d, col=%d\n", row, col);
+		pthread_exit(NULL);
+	}
+
+  // Initialize valid row array of size 9 and set all elements to 0, update if each position valid to 1 
+	int validityArray[9] = {0};
+	int i;
+
+
+  // Iterate through the whole row --> validate row array and update to 1 
+  // Set thread to 1, if encountered again --> no updates --> exit out of thread
+	for (i = 0; i < 9; i++) {
+		// If the corresponding index for the number is set to 1, and the number is encountered again,
+		// the valid array will not be updated and the thread will exit.
+		int num = sudoku[row][i];
+		if (num < 1 || num > 9 || validityArray[num - 1] == 1) {
+			pthread_exit(NULL);
+		} else {
+			validityArray[num - 1] = 1;		
+		}
+	}
+  // Iteration traversed and verified that row is valid --> update valid for rows to be 1 
+	valid[9 + row] = 1;
+	pthread_exit(NULL);
+}
+
+// Method that determines if numbers 1-9 only appear once in a 3x3 subsection
+void *threeBlock(void* param) {
+  
+	// Initialize and set pointers to struct data strcuture 
+	parameters *params = (parameters*) param;
+	int row = params->row;
+	int col = params->column;		
+
+	// 3 x 3 Block verification to check it's a correct block 
+	if (row > 6 || row % 3 != 0 || col > 6 || col % 3 != 0) {
 		fprintf(stderr, "Invalid row or column for subsection! row=%d, col=%d\n", row, col);
-    pthread_exit(NULL);
-  }
+		pthread_exit(NULL);
+	}
 
-  // Initialize valid array of size 9 and set all elements to 0, update if each position valid to 1 
+	// Initialize valid array of size 9 and set all elements to 0, update if each position valid to 1 
   // Exit out of thread
-  int validThreeArray[9] = {0};
+	int validityArray[9] = {0};
+	int i, j;
 
-  // Iterate through the 3 x 3 blocks of the 9 x 9 board 
-  for (int i = 0; i < row + 3; i++) {
-    for (int j = col; j < col + 3; j++) {
-      int num = sudoku[i][j]; 
-      if (num < 1 || num > 9 || validThreeArray[num - 1] == 1) {
-        pthread_exit(NULL);
-      } else {
-        validThreeArray[num - 1] = 1; 
-      }
-    }
-  }
+	// Iterate through the 3 x 3 blocks of the 9 x 9 board 
+	for (i = row; i < row + 3; i++) {
+		for (j = col; j < col + 3; j++) {
+			int num = sudoku[i][j];
+			if (num < 1 || num > 9 || validityArray[num - 1] == 1) {
+				pthread_exit(NULL);
+			} else {
+				validityArray[num - 1] = 1;		
+			}
+		}
+	}
 
   // Iteration traversed verified all 3 x 3 blocks are valid --> update valid by 1 
   // Exit out of thread 
-  valid[row + col / 3] = 1; 
-  pthread_exit(NULL);
+	valid[row + col/3] = 1; 
+	pthread_exit(NULL);
 }
 
 /**
@@ -194,53 +188,52 @@ void *threeBlock(void* param) {
  * @return int 
  */
 
-int main() {
-  
-  // Create worker thread identifiers for the number of threads 
-  pthread_t threads[numThreads];
+int main() {	
 
-  // Initiate a threadIndex 
-  int threadIndex = 0; 
+	// Create worker thread identifiers for the number of threads 
+	pthread_t threads[num_threads];
+	
+	int threadIndex = 0;	
+	int i,j;
 
-  // Iterate through all rows and columns --> create a worker thread for each 
-  for (int i = 0; i < 9; i++) {
-    for (int j = 0; j < 9; j++) {
-    // Section off 3 x 3 blocks using modulus %3 to create a worker thread for the block sections
-      if (i % 3 == 0 && j % 3 == 0) {
-        parameters *data = (parameters*) malloc(sizeof(parameters));
-        data->row = i; 
-        data->column = j; 
-        pthread_create(&threads[threadIndex++], NULL, threeBlock, data); 
-      }
-      if (i == 0) {
-        parameters *colData = (parameters*) malloc(sizeof(parameters));
-        colData->row = i; 
-        colData->column = j; 
-        pthread_create(&threads[threadIndex++], NULL, validColumn, colData);
-      }
-      if (j == 0) {
-        parameters *rowData = (parameters*) malloc(sizeof(parameters));
-        rowData->row = i; 
-        rowData->column = j; 
-        pthread_create(&threads[threadIndex++], NULL, validRow, rowData);
-      }
-    }
-  }
+	// Iterate through all rows and columns --> create a worker thread for each 
+	for (i = 0; i < 9; i++) {
+		for (j = 0; j < 9; j++) {						
+			if (i%3 == 0 && j%3 == 0) {
+				parameters *data = (parameters *) malloc(sizeof(parameters));	
+				data->row = i;		
+				data->column = j;
+				pthread_create(&threads[threadIndex++], NULL, threeBlock, data); // 3x3 subsection threads
+			}
+			if (i == 0) {
+				parameters *columnData = (parameters *) malloc(sizeof(parameters));	
+				columnData->row = i;		
+				columnData->column = j;
+				pthread_create(&threads[threadIndex++], NULL, validColumn, columnData);	// column threads
+			}
+			if (j == 0) {
+				parameters *rowData = (parameters *) malloc(sizeof(parameters));	
+				rowData->row = i;		
+				rowData->column = j;
+				pthread_create(&threads[threadIndex++], NULL, validRow, rowData); // row threads
+			}
+		}
+	}
 
   // Once all threads have completed --> join all thraeds
-  for (int i = 0; i < numThreads; i++) {
-    pthread_join(threads[i], NULL); 
-  }
+	for (i = 0; i < num_threads; i++) {
+		pthread_join(threads[i], NULL);			// Wait for all threads to finish
+	}
 
   // Iterate through the valid array check if any entries are 0 --> invalid Sudoku
-  for (int i = 0; i < numThreads; i++) {
-    if (valid[i] == 0) {
-      printf("Sudoku is not valid.");
-      return EXIT_SUCCESS;
-    }
-  }
-
-  // Iteration of valid array has been completed --> valid Suduko if all entires 1 
-  printf("Sudoku is valid.");
-  return EXIT_SUCCESS;
+	for (i = 0; i < num_threads; i++) {
+		if (valid[i] == 0) {
+			printf("Sudoku solution is invalid!\n");
+			return EXIT_SUCCESS;
+		}
+	}
+	
+	// Iteration of valid array has been completed --> valid Suduko if all entires 1 
+	printf("Sudoku solution is valid!\n");
+	return EXIT_SUCCESS;
 }
